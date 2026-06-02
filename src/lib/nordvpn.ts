@@ -1,7 +1,15 @@
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { existsSync } from "node:fs";
-import { getPreferenceValues, open, showToast, Toast } from "@raycast/api";
+import {
+  closeMainWindow,
+  getPreferenceValues,
+  open,
+  PopToRootType,
+  showToast,
+  Toast,
+} from "@raycast/api";
+import { runAppleScript as executeAppleScript } from "run-applescript";
 
 const execFileP = promisify(execFile);
 
@@ -220,15 +228,20 @@ async function runAppleScript(
   opts: RunOptions = {},
 ): Promise<string> {
   try {
-    const { stdout, stderr } = await execFileP(
-      "/usr/bin/osascript",
-      ["-e", script, ...args],
-      {
-        timeout: opts.timeoutMs ?? 60_000,
-        maxBuffer: 1024 * 1024,
-      },
-    );
-    return cleanOutput(stdout || stderr || "");
+    const output = await Promise.race([
+      args.length === 0
+        ? executeAppleScript(script)
+        : execFileP("/usr/bin/osascript", ["-e", script, ...args]).then(
+            ({ stdout, stderr }) => stdout || stderr || "",
+          ),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new NordvpnError("AppleScript timed out")),
+          opts.timeoutMs ?? 60_000,
+        ),
+      ),
+    ]);
+    return cleanOutput(output || "");
   } catch (err: unknown) {
     throw mapError(err);
   }
@@ -239,6 +252,9 @@ async function runNordvpnAppAutomation(
   opts: RunOptions = {},
 ): Promise<string> {
   const command = args[0];
+  if (command !== "status") {
+    await closeMainWindow({ popToRootType: PopToRootType.Suspended });
+  }
   if (command === "status") {
     return runAppleScript(STATUS_APPLESCRIPT, [], opts);
   }
@@ -509,6 +525,7 @@ export async function loginNordvpn(
   const bin = findNordvpnBinary();
   if (!bin) {
     if (isNordvpnAppInstalled()) {
+      await closeMainWindow({ popToRootType: PopToRootType.Suspended });
       await open(NORDVPN_APP_PATH);
       return {
         alreadyLoggedIn: false,
