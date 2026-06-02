@@ -65,7 +65,7 @@ export async function installNordvpnViaBrew(): Promise<void> {
 
   if (!findNordvpnBinary()) {
     throw new NordvpnError(
-      "Homebrew finished, but no `nordvpn` CLI binary was added. This NordVPN package appears to install only the macOS app on your machine. Set a custom NordVPN CLI Path in preferences if Nord provides a CLI binary elsewhere.",
+      "NordVPN for macOS does not include a `nordvpn` CLI binary. Homebrew only installs the app, so there is no CLI command to install from this package.",
     );
   }
 }
