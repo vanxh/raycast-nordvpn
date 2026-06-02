@@ -12,7 +12,7 @@ import {
 import { useCachedPromise } from "@raycast/utils";
 import {
   findBrewBinary,
-  isNordvpnControllable,
+  findNordvpnBinary,
   HOMEBREW_URL,
   isNordvpnAppInstalled,
   NORDVPN_APP_PATH,
@@ -148,9 +148,9 @@ export function MissingCliView({
 
 export function useCliInstalled() {
   const { data, isLoading, revalidate } = useCachedPromise(
-    async () => isNordvpnControllable(),
+    async () => findNordvpnBinary() !== null,
     [],
-    { keepPreviousData: true, initialData: isNordvpnControllable() },
+    { keepPreviousData: true, initialData: findNordvpnBinary() !== null },
   );
   return { installed: data ?? false, isLoading, revalidate };
 }
