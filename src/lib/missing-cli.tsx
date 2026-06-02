@@ -14,8 +14,6 @@ import {
   findBrewBinary,
   findNordvpnBinary,
   HOMEBREW_URL,
-  isNordvpnAppInstalled,
-  NORDVPN_APP_PATH,
   NORDVPN_DOWNLOAD_URL,
   NORDVPN_INSTALL_COMMAND,
   NORDVPN_LOGIN_COMMAND,
@@ -30,30 +28,20 @@ export function MissingCliView({
   showLoginAction?: boolean;
 }) {
   const brew = findBrewBinary();
-  const appInstalled = isNordvpnAppInstalled();
 
-  const description = appInstalled
-    ? "NordVPN.app is installed, but the macOS app/cask did not add a `nordvpn` CLI binary. Open the NordVPN app and sign in there, or set a custom CLI path in extension preferences if you have one."
-    : brew
-      ? `Install the NordVPN CLI to use this extension. Recommended: run \`${NORDVPN_INSTALL_COMMAND}\` (Homebrew detected). After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`
-      : `Install the NordVPN CLI to use this extension. Download from nordvpn.com or install Homebrew first to use \`${NORDVPN_INSTALL_COMMAND}\`. After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`;
+  const description = brew
+    ? `Install the NordVPN CLI to use this extension. Recommended: run \`${NORDVPN_INSTALL_COMMAND}\` (Homebrew detected). After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`
+    : `Install the NordVPN CLI to use this extension. Download from nordvpn.com or install Homebrew first to use \`${NORDVPN_INSTALL_COMMAND}\`. After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`;
 
   return (
     <List>
       <List.EmptyView
         icon={{ source: Icon.ExclamationMark }}
-        title={appInstalled ? "NordVPN CLI Missing" : "NordVPN CLI Not Found"}
+        title="NordVPN CLI Not Found"
         description={description}
         actions={
           <ActionPanel>
-            {appInstalled && (
-              <Action.Open
-                title="Open NordVPN App"
-                target={NORDVPN_APP_PATH}
-                icon={Icon.AppWindow}
-              />
-            )}
-            {brew && !appInstalled && (
+            {brew && (
               <Action
                 title="Install Via Homebrew"
                 icon={Icon.Download}

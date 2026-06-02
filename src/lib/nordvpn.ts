@@ -23,7 +23,6 @@ const BREW_PATHS = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"];
 
 export const NORDVPN_DOWNLOAD_URL = "https://nordvpn.com/download/";
 export const HOMEBREW_URL = "https://brew.sh";
-export const NORDVPN_APP_PATH = "/Applications/NordVPN.app";
 export const NORDVPN_INSTALL_COMMAND = "brew install --cask nordvpn";
 export const NORDVPN_LOGIN_COMMAND = "nordvpn login";
 
@@ -42,10 +41,6 @@ export function findBrewBinary(): string | null {
     if (existsSync(p)) return p;
   }
   return null;
-}
-
-export function isNordvpnAppInstalled(): boolean {
-  return existsSync(NORDVPN_APP_PATH);
 }
 
 export function getNordvpnPath(): string {
@@ -67,14 +62,6 @@ export async function installNordvpnViaBrew(): Promise<void> {
       PATH: `${process.env.PATH || ""}:/usr/local/bin:/opt/homebrew/bin:/usr/bin`,
     },
   });
-
-  if (!findNordvpnBinary()) {
-    throw new NordvpnError(
-      isNordvpnAppInstalled()
-        ? "NordVPN app is installed, but Homebrew's macOS cask does not expose a `nordvpn` CLI binary. Open the NordVPN app and sign in there."
-        : "Homebrew finished, but no `nordvpn` CLI binary was found.",
-    );
-  }
 }
 
 export async function openBrewInstallInTerminal(): Promise<void> {
