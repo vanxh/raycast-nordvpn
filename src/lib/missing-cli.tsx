@@ -30,8 +30,8 @@ export function MissingCliView({
   const brew = findBrewBinary();
 
   const description = brew
-    ? `Install the NordVPN CLI to use this extension. Recommended: run \`${NORDVPN_INSTALL_COMMAND}\` (Homebrew detected). After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`
-    : `Install the NordVPN CLI to use this extension. Download from nordvpn.com or install Homebrew first to use \`${NORDVPN_INSTALL_COMMAND}\`. After installing, run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`;
+    ? `Install the NordVPN CLI to use this extension. Recommended: run \`${NORDVPN_INSTALL_COMMAND}\` (Homebrew detected). If Homebrew only installs the macOS app and no CLI binary appears, set a real CLI path in extension preferences.`
+    : `Install the NordVPN CLI to use this extension. Install Homebrew first to use \`${NORDVPN_INSTALL_COMMAND}\`, or set a real CLI path in extension preferences.`;
 
   return (
     <List>
@@ -55,7 +55,7 @@ export function MissingCliView({
                   try {
                     await installNordvpnViaBrew();
                     toast.style = Toast.Style.Success;
-                    toast.title = "NordVPN installed";
+                    toast.title = "NordVPN CLI installed";
                     toast.message = "Run the Log in command to sign in.";
                     if (showLoginAction) {
                       toast.primaryAction = {

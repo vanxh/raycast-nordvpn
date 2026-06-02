@@ -62,22 +62,12 @@ export async function installNordvpnViaBrew(): Promise<void> {
       PATH: `${process.env.PATH || ""}:/usr/local/bin:/opt/homebrew/bin:/usr/bin`,
     },
   });
-}
 
-export async function openBrewInstallInTerminal(): Promise<void> {
-  const brew = findBrewBinary();
-  if (!brew) {
+  if (!findNordvpnBinary()) {
     throw new NordvpnError(
-      "Homebrew not found. Install Homebrew first from https://brew.sh.",
+      "Homebrew finished, but no `nordvpn` CLI binary was added. This NordVPN package appears to install only the macOS app on your machine. Set a custom NordVPN CLI Path in preferences if Nord provides a CLI binary elsewhere.",
     );
   }
-  const command = `${brew} install --cask nordvpn; echo; echo 'NordVPN install finished. You can close this window, then run the Raycast Log in command.'`;
-  await execFileP("/usr/bin/osascript", [
-    "-e",
-    `tell application "Terminal" to activate`,
-    "-e",
-    `tell application "Terminal" to do script ${JSON.stringify(command)}`,
-  ]);
 }
 
 export async function showMissingCliToast(): Promise<void> {
