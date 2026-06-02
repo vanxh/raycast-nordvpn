@@ -4,78 +4,66 @@ import {
   Form,
   getPreferenceValues,
   popToRoot,
-  showToast,
-  Toast,
 } from "@raycast/api";
 import { useForm } from "@raycast/utils";
 import {
-  runNordvpn,
-  sanitizeLocation,
+  buildConnectUrl,
+  COUNTRIES,
+  fireDeepLink,
+  GROUPS,
+  sanitizeCountry,
   withToast,
+  type ConnectTarget,
   type Preferences,
 } from "./lib/nordvpn";
-import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
+import { MissingAppView, useAppInstalled } from "./lib/missing-app";
 
 interface FormValues {
   mode: string;
-  location: string;
-  specialty: string;
+  country: string;
+  group: string;
 }
 
 export default function ConnectCommand() {
-  const cli = useCliInstalled();
+  const app = useAppInstalled();
   const prefs = getPreferenceValues<Preferences>();
-  const defaultLocation = prefs.defaultLocation?.trim() ?? "";
+  const defaultCountry = sanitizeCountry(prefs.defaultCountry ?? "");
+  const hasDefault = COUNTRIES.some((c) => c.code === defaultCountry);
 
   const { handleSubmit, itemProps, values } = useForm<FormValues>({
     initialValues: {
-      mode: defaultLocation ? "location" : "fastest",
-      location: defaultLocation,
-      specialty: "P2P",
-    },
-    validation: {
-      location: (value) => {
-        if (values?.mode === "location" && !value?.trim()) {
-          return "Enter a country, city, or server";
-        }
-        return undefined;
-      },
+      mode: hasDefault ? "country" : "fastest",
+      country: hasDefault ? defaultCountry : COUNTRIES[0].code,
+      group: GROUPS[0].id,
     },
     async onSubmit(form) {
-      const args: string[] = ["connect"];
-      let label = "Connecting…";
-      if (form.mode === "location") {
-        const loc = sanitizeLocation(form.location);
-        if (!loc) {
-          await showToast({
-            style: Toast.Style.Failure,
-            title: "Location required",
-          });
-          return;
-        }
-        args.push(loc);
-        label = `Connecting to ${loc}…`;
-      } else if (form.mode === "specialty") {
-        args.push("--group", form.specialty);
-        label = `Connecting to ${form.specialty}…`;
-      }
+      const target: ConnectTarget = {
+        mode: form.mode as ConnectTarget["mode"],
+        country: form.country,
+        group: form.group,
+      };
+      const label =
+        form.mode === "country"
+          ? `Connecting to ${countryName(form.country)}…`
+          : form.mode === "group"
+            ? `Connecting to ${groupTitle(form.group)}…`
+            : "Connecting (fastest)…";
       const ok = await withToast(
         label,
-        async () => {
-          await runNordvpn(args, { timeoutMs: 60_000 });
-        },
-        "Connected",
+        () => fireDeepLink(buildConnectUrl(target)),
+        "Sent to NordVPN",
       );
       if (ok !== undefined) await popToRoot();
     },
   });
 
-  if (!cli.installed) {
-    return <MissingCliView onRecheck={cli.revalidate} />;
+  if (!app.installed && !app.isLoading) {
+    return <MissingAppView onRecheck={app.revalidate} />;
   }
 
   return (
     <Form
+      isLoading={app.isLoading}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Connect" onSubmit={handleSubmit} />
@@ -84,30 +72,36 @@ export default function ConnectCommand() {
     >
       <Form.Dropdown title="Mode" {...itemProps.mode}>
         <Form.Dropdown.Item value="fastest" title="Fastest" />
-        <Form.Dropdown.Item value="location" title="Country / City / Server" />
-        <Form.Dropdown.Item value="specialty" title="Specialty Group" />
+        <Form.Dropdown.Item value="country" title="Country" />
+        <Form.Dropdown.Item value="group" title="Specialty Group" />
       </Form.Dropdown>
-      {values.mode === "location" && (
-        <Form.TextField
-          title="Location"
-          placeholder="United_States, Germany, London, us1234"
-          info="Spaces will be converted to underscores"
-          {...itemProps.location}
-        />
-      )}
-      {values.mode === "specialty" && (
-        <Form.Dropdown title="Group" {...itemProps.specialty}>
-          <Form.Dropdown.Item value="P2P" title="P2P" />
-          <Form.Dropdown.Item value="Double_VPN" title="Double VPN" />
-          <Form.Dropdown.Item value="Onion_Over_VPN" title="Onion Over VPN" />
-          <Form.Dropdown.Item value="Dedicated_IP" title="Dedicated IP" />
-          <Form.Dropdown.Item
-            value="Standard_VPN_Servers"
-            title="Standard VPN Servers"
-          />
+      {values.mode === "country" && (
+        <Form.Dropdown title="Country" {...itemProps.country}>
+          {COUNTRIES.map((c) => (
+            <Form.Dropdown.Item
+              key={c.code}
+              value={c.code}
+              title={`${c.name} (${c.code.toUpperCase()})`}
+            />
+          ))}
         </Form.Dropdown>
       )}
-      <Form.Description text="Tip: Set a Default Location in extension preferences to skip this form." />
+      {values.mode === "group" && (
+        <Form.Dropdown title="Group" {...itemProps.group}>
+          {GROUPS.map((g) => (
+            <Form.Dropdown.Item key={g.id} value={g.id} title={g.title} />
+          ))}
+        </Form.Dropdown>
+      )}
+      <Form.Description text="NordVPN's macOS app is controlled via deep links. The action is sent to the app; it cannot be confirmed back here. Set a Default Country in preferences to skip this form via Quick Actions." />
     </Form>
   );
+}
+
+function countryName(code: string): string {
+  return COUNTRIES.find((c) => c.code === code)?.name ?? code.toUpperCase();
+}
+
+function groupTitle(id: string): string {
+  return GROUPS.find((g) => g.id === id)?.title ?? id;
 }

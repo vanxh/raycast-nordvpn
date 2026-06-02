@@ -2,7 +2,7 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "nordvpn",
   "title": "NordVPN",
-  "description": "Control NordVPN from Raycast using the NordVPN CLI",
+  "description": "Control the NordVPN macOS app from Raycast via deep links",
   "icon": "command-icon.png",
   "author": "vanxh",
   "categories": ["Applications", "Productivity"],
@@ -11,7 +11,7 @@
     {
       "name": "connect",
       "title": "Connect",
-      "description": "Connect NordVPN to fastest or selected country/city/server",
+      "description": "Connect NordVPN to fastest, a country, or a specialty group",
       "mode": "view"
     },
     {
@@ -23,13 +23,7 @@
     {
       "name": "login",
       "title": "Log in",
-      "description": "Start the NordVPN login flow and open the browser URL",
-      "mode": "view"
-    },
-    {
-      "name": "status",
-      "title": "Status",
-      "description": "Show current NordVPN status",
+      "description": "Open the NordVPN app to sign in",
       "mode": "view"
     },
     {
@@ -37,29 +31,15 @@
       "title": "Quick Actions",
       "description": "Common NordVPN actions",
       "mode": "view"
-    },
-    {
-      "name": "settings",
-      "title": "Settings",
-      "description": "Toggle NordVPN settings",
-      "mode": "view"
     }
   ],
   "preferences": [
     {
-      "name": "defaultLocation",
-      "title": "Default Location",
-      "description": "Optional default location for quick connect, e.g. United_States, Germany, London",
+      "name": "defaultCountry",
+      "title": "Default Country",
+      "description": "Optional 2-letter ISO country code for quick connect, e.g. us, de, jp",
       "type": "textfield",
       "required": false
-    },
-    {
-      "name": "nordvpnPath",
-      "title": "NordVPN CLI Path",
-      "description": "Path to nordvpn command if not in PATH",
-      "type": "textfield",
-      "required": false,
-      "default": "/usr/local/bin/nordvpn"
     }
   ],
   "scripts": {

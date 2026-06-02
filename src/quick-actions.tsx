@@ -5,62 +5,58 @@ import {
   Icon,
   List,
 } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
 import {
-  getStatus,
-  runNordvpn,
-  sanitizeLocation,
+  buildConnectUrl,
+  COUNTRIES,
+  DISCONNECT_URL,
+  fireDeepLink,
+  openApp,
+  sanitizeCountry,
   withToast,
   type Preferences,
 } from "./lib/nordvpn";
-import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
+import { MissingAppView, useAppInstalled } from "./lib/missing-app";
 
 interface QuickAction {
   id: string;
   title: string;
   subtitle?: string;
   icon: Icon;
-  args: string[];
+  url: string;
   toast: string;
   successTitle: string;
-  timeoutMs?: number;
 }
 
 export default function QuickActionsCommand() {
+  const app = useAppInstalled();
   const prefs = getPreferenceValues<Preferences>();
-  const cli = useCliInstalled();
-  const { data, isLoading, revalidate } = useCachedPromise(getStatus, [], {
-    keepPreviousData: true,
-    execute: cli.installed,
-  });
 
-  if (!cli.installed) {
-    return <MissingCliView onRecheck={cli.revalidate} />;
+  if (!app.installed && !app.isLoading) {
+    return <MissingAppView onRecheck={app.revalidate} />;
   }
 
-  const actions: QuickAction[] = [];
+  const actions: QuickAction[] = [
+    {
+      id: "fastest",
+      title: "Connect Fastest",
+      icon: Icon.Bolt,
+      url: buildConnectUrl({ mode: "fastest" }),
+      toast: "Connecting (fastest)…",
+      successTitle: "Sent to NordVPN",
+    },
+  ];
 
-  actions.push({
-    id: "fastest",
-    title: "Connect Fastest",
-    icon: Icon.Bolt,
-    args: ["connect"],
-    toast: "Connecting…",
-    successTitle: "Connected",
-    timeoutMs: 60_000,
-  });
-
-  if (prefs.defaultLocation?.trim()) {
-    const loc = sanitizeLocation(prefs.defaultLocation);
+  const defaultCountry = sanitizeCountry(prefs.defaultCountry ?? "");
+  const known = COUNTRIES.find((c) => c.code === defaultCountry);
+  if (defaultCountry) {
     actions.push({
-      id: "default-location",
-      title: "Connect Default Location",
-      subtitle: loc,
+      id: "default-country",
+      title: "Connect Default Country",
+      subtitle: known?.name ?? defaultCountry.toUpperCase(),
       icon: Icon.Pin,
-      args: ["connect", loc],
-      toast: `Connecting to ${loc}…`,
-      successTitle: "Connected",
-      timeoutMs: 60_000,
+      url: buildConnectUrl({ mode: "country", country: defaultCountry }),
+      toast: `Connecting to ${known?.name ?? defaultCountry.toUpperCase()}…`,
+      successTitle: "Sent to NordVPN",
     });
   }
 
@@ -69,51 +65,31 @@ export default function QuickActionsCommand() {
       id: "p2p",
       title: "Connect P2P",
       icon: Icon.TwoPeople,
-      args: ["connect", "--group", "P2P"],
+      url: buildConnectUrl({ mode: "group", group: "p2p" }),
       toast: "Connecting to P2P…",
-      successTitle: "Connected",
-      timeoutMs: 60_000,
+      successTitle: "Sent to NordVPN",
     },
     {
       id: "double",
       title: "Connect Double VPN",
       icon: Icon.Shield,
-      args: ["connect", "--group", "Double_VPN"],
+      url: buildConnectUrl({ mode: "group", group: "double_vpn" }),
       toast: "Connecting to Double VPN…",
-      successTitle: "Connected",
-      timeoutMs: 60_000,
-    },
-    {
-      id: "onion",
-      title: "Connect Onion Over VPN",
-      icon: Icon.EyeDisabled,
-      args: ["connect", "--group", "Onion_Over_VPN"],
-      toast: "Connecting to Onion Over VPN…",
-      successTitle: "Connected",
-      timeoutMs: 60_000,
+      successTitle: "Sent to NordVPN",
     },
     {
       id: "disconnect",
       title: "Disconnect",
       icon: Icon.XMarkCircle,
-      args: ["disconnect"],
+      url: DISCONNECT_URL,
       toast: "Disconnecting…",
-      successTitle: "Disconnected",
-    },
-    {
-      id: "reconnect",
-      title: "Reconnect",
-      icon: Icon.ArrowClockwise,
-      args: ["reconnect"],
-      toast: "Reconnecting…",
-      successTitle: "Reconnected",
-      timeoutMs: 60_000,
+      successTitle: "Sent to NordVPN",
     },
   );
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search actions…">
-      <List.Section title={data?.connected ? "Connected" : "Disconnected"}>
+    <List isLoading={app.isLoading} searchBarPlaceholder="Search actions…">
+      <List.Section title="NordVPN">
         {actions.map((a) => (
           <List.Item
             key={a.id}
@@ -125,19 +101,18 @@ export default function QuickActionsCommand() {
                 <Action
                   title={a.title}
                   icon={a.icon}
-                  onAction={async () => {
-                    await withToast(
+                  onAction={() =>
+                    withToast(
                       a.toast,
-                      () => runNordvpn(a.args, { timeoutMs: a.timeoutMs }),
+                      () => fireDeepLink(a.url),
                       a.successTitle,
-                    );
-                    revalidate();
-                  }}
+                    )
+                  }
                 />
                 <Action
-                  title="Refresh Status"
-                  icon={Icon.ArrowClockwise}
-                  onAction={revalidate}
+                  title="Open NordVPN App"
+                  icon={Icon.AppWindow}
+                  onAction={openApp}
                 />
               </ActionPanel>
             }
