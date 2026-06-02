@@ -15,22 +15,34 @@
       "mode": "view"
     },
     {
+      "name": "connect-fastest",
+      "title": "Connect Fastest",
+      "description": "Connect NordVPN to the fastest server",
+      "mode": "no-view"
+    },
+    {
+      "name": "connect-default-country",
+      "title": "Connect Default Country",
+      "description": "Connect NordVPN to the country set in preferences",
+      "mode": "no-view"
+    },
+    {
+      "name": "connect-p2p",
+      "title": "Connect P2P",
+      "description": "Connect NordVPN to the P2P group",
+      "mode": "no-view"
+    },
+    {
+      "name": "connect-double-vpn",
+      "title": "Connect Double VPN",
+      "description": "Connect NordVPN to the Double VPN group",
+      "mode": "no-view"
+    },
+    {
       "name": "disconnect",
       "title": "Disconnect",
       "description": "Disconnect NordVPN",
       "mode": "no-view"
-    },
-    {
-      "name": "login",
-      "title": "Log in",
-      "description": "Open the NordVPN app to sign in",
-      "mode": "view"
-    },
-    {
-      "name": "quick-actions",
-      "title": "Quick Actions",
-      "description": "Common NordVPN actions",
-      "mode": "view"
     }
   ],
   "preferences": [
