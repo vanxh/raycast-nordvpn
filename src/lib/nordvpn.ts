@@ -48,6 +48,10 @@ export function isNordvpnAppInstalled(): boolean {
   return existsSync(NORDVPN_APP_PATH);
 }
 
+export function isNordvpnControllable(): boolean {
+  return findNordvpnBinary() !== null || isNordvpnAppInstalled();
+}
+
 export function getNordvpnPath(): string {
   return findNordvpnBinary() ?? "nordvpn";
 }
@@ -139,6 +143,9 @@ export async function runNordvpn(
   for (const a of args) validateArg(a);
   const bin = findNordvpnBinary();
   if (!bin) {
+    if (isNordvpnAppInstalled()) {
+      return runNordvpnAppAutomation(args, opts);
+    }
     throw new NordvpnError(
       `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\` or from ${NORDVPN_DOWNLOAD_URL}, then run \`${NORDVPN_LOGIN_COMMAND}\`.`,
     );
@@ -206,6 +213,209 @@ export function cleanOutput(s: string): string {
     .filter((line) => line.length > 0 && !/^-+$/.test(line))
     .join("\n");
 }
+
+async function runAppleScript(
+  script: string,
+  args: string[] = [],
+  opts: RunOptions = {},
+): Promise<string> {
+  try {
+    const { stdout, stderr } = await execFileP(
+      "/usr/bin/osascript",
+      ["-e", script, ...args],
+      {
+        timeout: opts.timeoutMs ?? 60_000,
+        maxBuffer: 1024 * 1024,
+      },
+    );
+    return cleanOutput(stdout || stderr || "");
+  } catch (err: unknown) {
+    throw mapError(err);
+  }
+}
+
+async function runNordvpnAppAutomation(
+  args: string[],
+  opts: RunOptions = {},
+): Promise<string> {
+  const command = args[0];
+  if (command === "status") {
+    return runAppleScript(STATUS_APPLESCRIPT, [], opts);
+  }
+  if (command === "disconnect") {
+    return runAppleScript(DISCONNECT_APPLESCRIPT, [], opts);
+  }
+  if (command === "reconnect") {
+    await runAppleScript(DISCONNECT_APPLESCRIPT, [], opts);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return runAppleScript(CONNECT_FASTEST_APPLESCRIPT, [], opts);
+  }
+  if (command === "connect") {
+    const location = args.find(
+      (arg, index) =>
+        index > 0 && !arg.startsWith("--") && args[index - 1] !== "--group",
+    );
+    if (args.includes("--group")) {
+      throw new NordvpnError(
+        "Specialty groups need the Linux NordVPN CLI. The macOS app automation fallback supports Fastest, country connect, status, and disconnect.",
+      );
+    }
+    if (location) {
+      return runAppleScript(
+        CONNECT_LOCATION_APPLESCRIPT,
+        [location.replace(/_/g, " ")],
+        opts,
+      );
+    }
+    return runAppleScript(CONNECT_FASTEST_APPLESCRIPT, [], opts);
+  }
+  throw new NordvpnError(
+    "This action needs the `nordvpn` CLI. The macOS app automation fallback supports Fastest, country connect, status, and disconnect.",
+  );
+}
+
+const STATUS_APPLESCRIPT = String.raw`
+tell application "NordVPN" to activate
+delay 0.5
+tell application "System Events"
+  tell process "NordVPN"
+    repeat 40 times
+      if exists window 1 then exit repeat
+      delay 0.1
+    end repeat
+    if not (exists window 1) then return "Status: Unknown\nApp: NordVPN"
+    try
+      set mainGroup to group 1 of window 1
+      set contentArea to UI element 3 of mainGroup
+      set statusText to value of UI element 1 of contentArea
+      if statusText contains "Connect to VPN" then
+        return "Status: Disconnected\nApp: NordVPN"
+      else
+        return "Status: Connected\nApp: NordVPN\nDetails: " & statusText
+      end if
+    on error errMsg
+      return "Status: Unknown\nApp: NordVPN\nDetails: " & errMsg
+    end try
+  end tell
+end tell
+`;
+
+const CONNECT_FASTEST_APPLESCRIPT = String.raw`
+tell application "NordVPN" to activate
+tell application "System Events"
+  repeat 50 times
+    if frontmost of process "NordVPN" then exit repeat
+    delay 0.1
+  end repeat
+  tell process "NordVPN"
+    repeat until (exists window 1)
+      delay 0.1
+    end repeat
+    set mainGroup to group 1 of window 1
+    repeat until (exists UI element 3 of mainGroup)
+      delay 0.1
+    end repeat
+    set contentArea to UI element 3 of mainGroup
+    repeat until (exists UI element 2 of contentArea)
+      delay 0.1
+    end repeat
+    click UI element 2 of contentArea
+    return "Connecting"
+  end tell
+end tell
+`;
+
+const DISCONNECT_APPLESCRIPT = String.raw`
+tell application "NordVPN" to activate
+tell application "System Events"
+  tell process "NordVPN"
+    repeat until (exists window 1)
+      delay 0.1
+    end repeat
+    repeat until (exists group 1 of window 1)
+      delay 0.1
+    end repeat
+    set mainGroup to group 1 of window 1
+    repeat until (exists UI element 3 of mainGroup)
+      delay 0.1
+    end repeat
+    set contentArea to UI element 3 of mainGroup
+    try
+      set statusText to value of UI element 1 of contentArea
+      if statusText contains "Connect to VPN" then return "VPN is not connected"
+    end try
+    repeat until (exists UI element 2 of contentArea)
+      delay 0.1
+    end repeat
+    set pauseButton to UI element 2 of contentArea
+    try
+      set buttonDesc to description of pauseButton
+      if buttonDesc contains "Secure" or buttonDesc contains "Connect" then return "VPN is not connected"
+    end try
+    click pauseButton
+    repeat until (exists UI element 6 of contentArea)
+      delay 0.1
+    end repeat
+    set disconnectMenu to UI element 6 of contentArea
+    repeat until (exists UI element 6 of disconnectMenu)
+      delay 0.1
+    end repeat
+    click UI element 6 of disconnectMenu
+    return "VPN disconnected"
+  end tell
+end tell
+`;
+
+const CONNECT_LOCATION_APPLESCRIPT = String.raw`
+on run argv
+  if (count of argv) < 1 then error "Location required"
+  set targetCountry to item 1 of argv
+  tell application "NordVPN" to activate
+  tell application "System Events"
+    repeat 50 times
+      if frontmost of process "NordVPN" then exit repeat
+      delay 0.1
+    end repeat
+    tell process "NordVPN"
+      repeat until (exists window 1)
+        delay 0.1
+      end repeat
+      set mainGroup to group 1 of window 1
+      repeat until (exists UI element 3 of mainGroup)
+        delay 0.1
+      end repeat
+      set contentArea to UI element 3 of mainGroup
+      repeat until (exists UI element 3 of contentArea)
+        delay 0.1
+      end repeat
+      set serverListGroup to UI element 3 of contentArea
+      repeat until (exists UI element 2 of serverListGroup)
+        delay 0.1
+      end repeat
+      set scrollArea to UI element 2 of serverListGroup
+      repeat until (exists UI element 1 of scrollArea)
+        delay 0.1
+      end repeat
+      set serverTable to UI element 1 of scrollArea
+      set maxAttempts to 80
+      repeat with attempts from 1 to maxAttempts
+        set rowCount to count of rows of serverTable
+        repeat with i from 1 to rowCount
+          try
+            set cellDesc to description of UI element 1 of row i of serverTable
+            if cellDesc contains targetCountry then
+              click UI element 1 of UI element 1 of row i of serverTable
+              return "Connecting to " & targetCountry
+            end if
+          end try
+        end repeat
+        delay 0.05
+      end repeat
+      error targetCountry & " not found in NordVPN app list"
+    end tell
+  end tell
+end run
+`;
 
 export interface Status {
   connected: boolean;
@@ -298,6 +508,14 @@ export async function loginNordvpn(
 ): Promise<LoginResult> {
   const bin = findNordvpnBinary();
   if (!bin) {
+    if (isNordvpnAppInstalled()) {
+      await open(NORDVPN_APP_PATH);
+      return {
+        alreadyLoggedIn: false,
+        output:
+          "Opened NordVPN.app. The macOS app does not expose `nordvpn login`; sign in in the app.",
+      };
+    }
     throw new NordvpnError(
       `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\` or from ${NORDVPN_DOWNLOAD_URL}.`,
     );
