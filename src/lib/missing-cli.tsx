@@ -20,7 +20,13 @@ import {
   installNordvpnViaBrew,
 } from "./nordvpn";
 
-export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
+export function MissingCliView({
+  onRecheck,
+  showLoginAction = true,
+}: {
+  onRecheck?: () => void;
+  showLoginAction?: boolean;
+}) {
   const brew = findBrewBinary();
 
   const description = brew
@@ -51,15 +57,17 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                     toast.style = Toast.Style.Success;
                     toast.title = "NordVPN installed";
                     toast.message = "Run the Log in command to sign in.";
-                    toast.primaryAction = {
-                      title: "Log In",
-                      onAction: async () => {
-                        await launchCommand({
-                          name: "login",
-                          type: LaunchType.UserInitiated,
-                        });
-                      },
-                    };
+                    if (showLoginAction) {
+                      toast.primaryAction = {
+                        title: "Log In",
+                        onAction: async () => {
+                          await launchCommand({
+                            name: "login",
+                            type: LaunchType.UserInitiated,
+                          });
+                        },
+                      };
+                    }
                     onRecheck?.();
                   } catch (err) {
                     toast.style = Toast.Style.Failure;
@@ -107,16 +115,18 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                 onAction={onRecheck}
               />
             )}
-            <Action
-              title="Open Log in Command"
-              icon={Icon.Lock}
-              onAction={async () => {
-                await launchCommand({
-                  name: "login",
-                  type: LaunchType.UserInitiated,
-                });
-              }}
-            />
+            {showLoginAction && (
+              <Action
+                title="Open Log in Command"
+                icon={Icon.Lock}
+                onAction={async () => {
+                  await launchCommand({
+                    name: "login",
+                    type: LaunchType.UserInitiated,
+                  });
+                }}
+              />
+            )}
           </ActionPanel>
         }
       />

@@ -69,7 +69,9 @@ export default function LoginCommand() {
   }, [cli.installed, cli.isLoading]);
 
   if (!cli.installed && !cli.isLoading) {
-    return <MissingCliView onRecheck={cli.revalidate} />;
+    return (
+      <MissingCliView onRecheck={cli.revalidate} showLoginAction={false} />
+    );
   }
 
   const markdown = buildMarkdown(phase, url, error);
