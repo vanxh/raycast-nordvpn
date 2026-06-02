@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { getStatus, runNordvpn, withToast } from "./lib/nordvpn";
+import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
 
 const ORDERED_KEYS = [
   "status",
@@ -16,9 +17,15 @@ const ORDERED_KEYS = [
 ];
 
 export default function StatusCommand() {
+  const cli = useCliInstalled();
   const { data, isLoading, revalidate } = useCachedPromise(getStatus, [], {
     keepPreviousData: true,
+    execute: cli.installed,
   });
+
+  if (!cli.installed) {
+    return <MissingCliView onRecheck={cli.revalidate} />;
+  }
 
   const connected = data?.connected ?? false;
 

@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { existsSync } from "node:fs";
-import { getPreferenceValues, showToast, Toast } from "@raycast/api";
+import { getPreferenceValues, open, showToast, Toast } from "@raycast/api";
 
 const execFileP = promisify(execFile);
 
@@ -17,24 +17,66 @@ const FALLBACK_PATHS = [
   "/usr/bin/nordvpn",
 ];
 
-let resolvedPath: string | null = null;
+const BREW_PATHS = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"];
 
-export function getNordvpnPath(): string {
-  if (resolvedPath) return resolvedPath;
+export const NORDVPN_DOWNLOAD_URL = "https://nordvpn.com/download/";
+export const HOMEBREW_URL = "https://brew.sh";
+export const NORDVPN_INSTALL_COMMAND = "brew install --cask nordvpn";
+export const NORDVPN_LOGIN_COMMAND = "nordvpn login";
+
+export function findNordvpnBinary(): string | null {
   const prefs = getPreferenceValues<Preferences>();
   const candidate = (prefs.nordvpnPath || "").trim();
-  if (candidate && existsSync(candidate)) {
-    resolvedPath = candidate;
-    return candidate;
-  }
+  if (candidate && existsSync(candidate)) return candidate;
   for (const p of FALLBACK_PATHS) {
-    if (existsSync(p)) {
-      resolvedPath = p;
-      return p;
-    }
+    if (existsSync(p)) return p;
   }
-  resolvedPath = candidate || "nordvpn";
-  return resolvedPath;
+  return null;
+}
+
+export function findBrewBinary(): string | null {
+  for (const p of BREW_PATHS) {
+    if (existsSync(p)) return p;
+  }
+  return null;
+}
+
+export function getNordvpnPath(): string {
+  return findNordvpnBinary() ?? "nordvpn";
+}
+
+export async function installNordvpnViaBrew(): Promise<void> {
+  const brew = findBrewBinary();
+  if (!brew) {
+    throw new NordvpnError(
+      "Homebrew not found. Install Homebrew first from https://brew.sh.",
+    );
+  }
+  await execFileP(brew, ["install", "--cask", "nordvpn"], {
+    timeout: 5 * 60_000,
+    maxBuffer: 8 * 1024 * 1024,
+    env: {
+      ...process.env,
+      PATH: `${process.env.PATH || ""}:/usr/local/bin:/opt/homebrew/bin:/usr/bin`,
+    },
+  });
+}
+
+export async function showMissingCliToast(): Promise<void> {
+  const brew = findBrewBinary();
+  await showToast({
+    style: Toast.Style.Failure,
+    title: "NordVPN CLI not found",
+    message: brew
+      ? `Run \`${NORDVPN_INSTALL_COMMAND}\` or open the download page.`
+      : "Install from nordvpn.com/download.",
+    primaryAction: {
+      title: "Open Download Page",
+      onAction: () => {
+        open(NORDVPN_DOWNLOAD_URL);
+      },
+    },
+  });
 }
 
 export class NordvpnError extends Error {
@@ -64,7 +106,12 @@ export async function runNordvpn(
   opts: RunOptions = {},
 ): Promise<string> {
   for (const a of args) validateArg(a);
-  const bin = getNordvpnPath();
+  const bin = findNordvpnBinary();
+  if (!bin) {
+    throw new NordvpnError(
+      `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\` or from ${NORDVPN_DOWNLOAD_URL}, then run \`${NORDVPN_LOGIN_COMMAND}\`.`,
+    );
+  }
   try {
     const { stdout, stderr } = await execFileP(bin, args, {
       timeout: opts.timeoutMs ?? 30_000,
@@ -91,7 +138,7 @@ function mapError(err: unknown): NordvpnError {
   const msg = raw || e.message || "Unknown error";
   if (e.code === "ENOENT") {
     return new NordvpnError(
-      "NordVPN CLI not found. Install it from nordvpn.com/download and set the path in extension preferences.",
+      `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\` or from ${NORDVPN_DOWNLOAD_URL}, then run \`${NORDVPN_LOGIN_COMMAND}\`.`,
     );
   }
   if (/not logged in/i.test(msg)) {

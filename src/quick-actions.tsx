@@ -13,6 +13,7 @@ import {
   withToast,
   type Preferences,
 } from "./lib/nordvpn";
+import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
 
 interface QuickAction {
   id: string;
@@ -27,9 +28,15 @@ interface QuickAction {
 
 export default function QuickActionsCommand() {
   const prefs = getPreferenceValues<Preferences>();
+  const cli = useCliInstalled();
   const { data, isLoading, revalidate } = useCachedPromise(getStatus, [], {
     keepPreviousData: true,
+    execute: cli.installed,
   });
+
+  if (!cli.installed) {
+    return <MissingCliView onRecheck={cli.revalidate} />;
+  }
 
   const actions: QuickAction[] = [];
 

@@ -1,6 +1,7 @@
 import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import { getSettings, isOn, runNordvpn, withToast } from "./lib/nordvpn";
+import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
 
 interface Toggle {
   key: string;
@@ -31,12 +32,21 @@ const TOGGLES: Toggle[] = [
 ];
 
 export default function SettingsCommand() {
+  const cli = useCliInstalled();
   const { data, isLoading, revalidate } = useCachedPromise(getSettings, [], {
     keepPreviousData: true,
+    execute: cli.installed,
   });
 
+  if (!cli.installed) {
+    return <MissingCliView onRecheck={cli.revalidate} />;
+  }
+
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search settings…">
+    <List
+      isLoading={isLoading || cli.isLoading}
+      searchBarPlaceholder="Search settings…"
+    >
       <List.Section title="Toggles">
         {TOGGLES.map((t) => {
           const current = findField(data?.fields ?? {}, t.key);

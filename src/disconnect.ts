@@ -1,8 +1,17 @@
 import { closeMainWindow } from "@raycast/api";
-import { runNordvpn, withToast } from "./lib/nordvpn";
+import {
+  findNordvpnBinary,
+  runNordvpn,
+  showMissingCliToast,
+  withToast,
+} from "./lib/nordvpn";
 
 export default async function DisconnectCommand() {
   await closeMainWindow();
+  if (!findNordvpnBinary()) {
+    await showMissingCliToast();
+    return;
+  }
   await withToast(
     "Disconnecting…",
     async () => {

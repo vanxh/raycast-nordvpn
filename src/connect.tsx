@@ -14,6 +14,7 @@ import {
   withToast,
   type Preferences,
 } from "./lib/nordvpn";
+import { MissingCliView, useCliInstalled } from "./lib/missing-cli";
 
 interface FormValues {
   mode: string;
@@ -22,6 +23,7 @@ interface FormValues {
 }
 
 export default function ConnectCommand() {
+  const cli = useCliInstalled();
   const prefs = getPreferenceValues<Preferences>();
   const defaultLocation = prefs.defaultLocation?.trim() ?? "";
 
@@ -67,6 +69,10 @@ export default function ConnectCommand() {
       if (ok !== undefined) await popToRoot();
     },
   });
+
+  if (!cli.installed) {
+    return <MissingCliView onRecheck={cli.revalidate} />;
+  }
 
   return (
     <Form

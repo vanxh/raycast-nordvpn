@@ -12,9 +12,11 @@ Control [NordVPN](https://nordvpn.com) from Raycast using the official `nordvpn`
 
 ## Requirements
 
-This extension shells out to the NordVPN CLI. You must install and log in **before** using it:
+This extension shells out to the NordVPN CLI. If the CLI is missing, the extension shows an install prompt with actions to open the NordVPN download page, copy install/login commands, or install via Homebrew when available.
 
-1. Install the CLI: <https://nordvpn.com/download/>
+Manual setup:
+
+1. Install the CLI: <https://nordvpn.com/download/> or on macOS with Homebrew: `brew install --cask nordvpn`
 2. Start the daemon (Linux: `sudo systemctl start nordvpnd`; macOS: launches automatically after install).
 3. Log in: `nordvpn login` (follow the printed browser URL).
 4. Verify: `nordvpn status` works in a normal terminal.
