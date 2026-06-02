@@ -1,0 +1,76 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "nordvpn",
+  "title": "NordVPN",
+  "description": "Control NordVPN from Raycast using the NordVPN CLI",
+  "icon": "command-icon.png",
+  "author": "vanxh",
+  "categories": ["Applications", "Productivity"],
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "connect",
+      "title": "Connect",
+      "description": "Connect NordVPN to fastest or selected country/city/server",
+      "mode": "view"
+    },
+    {
+      "name": "disconnect",
+      "title": "Disconnect",
+      "description": "Disconnect NordVPN",
+      "mode": "no-view"
+    },
+    {
+      "name": "status",
+      "title": "Status",
+      "description": "Show current NordVPN status",
+      "mode": "view"
+    },
+    {
+      "name": "quick-actions",
+      "title": "Quick Actions",
+      "description": "Common NordVPN actions",
+      "mode": "view"
+    },
+    {
+      "name": "settings",
+      "title": "Settings",
+      "description": "Toggle NordVPN settings",
+      "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "defaultLocation",
+      "title": "Default Location",
+      "description": "Optional default location for quick connect, e.g. United_States, Germany, London",
+      "type": "textfield",
+      "required": false
+    },
+    {
+      "name": "nordvpnPath",
+      "title": "NordVPN CLI Path",
+      "description": "Path to nordvpn command if not in PATH",
+      "type": "textfield",
+      "required": false,
+      "default": "/usr/local/bin/nordvpn"
+    }
+  ],
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix"
+  },
+  "dependencies": {
+    "@raycast/api": "latest",
+    "@raycast/utils": "latest"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "latest",
+    "@types/node": "latest",
+    "eslint": "latest",
+    "prettier": "latest",
+    "typescript": "latest"
+  }
+}
