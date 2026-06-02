@@ -64,6 +64,22 @@ export async function installNordvpnViaBrew(): Promise<void> {
   });
 }
 
+export async function openBrewInstallInTerminal(): Promise<void> {
+  const brew = findBrewBinary();
+  if (!brew) {
+    throw new NordvpnError(
+      "Homebrew not found. Install Homebrew first from https://brew.sh.",
+    );
+  }
+  const command = `${brew} install --cask nordvpn; echo; echo 'NordVPN install finished. You can close this window, then run the Raycast Log in command.'`;
+  await execFileP("/usr/bin/osascript", [
+    "-e",
+    `tell application "Terminal" to activate`,
+    "-e",
+    `tell application "Terminal" to do script ${JSON.stringify(command)}`,
+  ]);
+}
+
 export async function showMissingCliToast(): Promise<void> {
   const brew = findBrewBinary();
   await showToast({

@@ -13,10 +13,10 @@ import {
   findBrewBinary,
   findNordvpnBinary,
   HOMEBREW_URL,
-  installNordvpnViaBrew,
   NORDVPN_DOWNLOAD_URL,
   NORDVPN_INSTALL_COMMAND,
   NORDVPN_LOGIN_COMMAND,
+  openBrewInstallInTerminal,
 } from "./nordvpn";
 
 export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
@@ -36,19 +36,21 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
           <ActionPanel>
             {brew && (
               <Action
-                title="Install Via Homebrew"
-                icon={Icon.Download}
+                title="Install Via Homebrew in Terminal"
+                icon={Icon.Terminal}
                 onAction={async () => {
                   const toast = await showToast({
                     style: Toast.Style.Animated,
-                    title: "Installing NordVPN via Homebrew…",
-                    message: "This can take a few minutes.",
+                    title: "Opening Terminal…",
+                    message:
+                      "Run the Homebrew installer there so you can see prompts/output.",
                   });
                   try {
-                    await installNordvpnViaBrew();
+                    await openBrewInstallInTerminal();
                     toast.style = Toast.Style.Success;
-                    toast.title = "NordVPN installed";
-                    toast.message = "Run the Log In command to sign in.";
+                    toast.title = "Terminal opened";
+                    toast.message =
+                      "Complete the Homebrew install, then run Log in from Raycast.";
                     toast.primaryAction = {
                       title: "Log In",
                       onAction: async () => {
@@ -58,10 +60,9 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                         });
                       },
                     };
-                    onRecheck?.();
                   } catch (err) {
                     toast.style = Toast.Style.Failure;
-                    toast.title = "Install failed";
+                    toast.title = "Could not open Terminal";
                     toast.message =
                       err instanceof Error ? err.message : String(err);
                   }
