@@ -55,8 +55,8 @@ export async function installNordvpnViaBrew(): Promise<void> {
     );
   }
   await execFileP(brew, ["install", "--cask", "nordvpn"], {
-    timeout: 5 * 60_000,
-    maxBuffer: 8 * 1024 * 1024,
+    timeout: 20 * 60_000,
+    maxBuffer: 16 * 1024 * 1024,
     env: {
       ...process.env,
       PATH: `${process.env.PATH || ""}:/usr/local/bin:/opt/homebrew/bin:/usr/bin`,

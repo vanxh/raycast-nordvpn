@@ -13,7 +13,7 @@ Control [NordVPN](https://nordvpn.com) from Raycast using the official `nordvpn`
 
 ## Requirements
 
-This extension shells out to the NordVPN CLI. If the CLI is missing, the extension shows an install prompt with actions to open the NordVPN download page, copy install/login commands, or open a Terminal tab running the Homebrew install command when Homebrew is available.
+This extension shells out to the NordVPN CLI. If the CLI is missing, the extension shows an install prompt with actions to open the NordVPN download page, copy install/login commands, or run the Homebrew install command directly from Raycast when Homebrew is available.
 
 Manual setup:
 

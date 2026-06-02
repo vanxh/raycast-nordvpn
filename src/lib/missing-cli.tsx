@@ -1,6 +1,7 @@
 import {
   Action,
   ActionPanel,
+  Clipboard,
   Icon,
   launchCommand,
   LaunchType,
@@ -16,7 +17,7 @@ import {
   NORDVPN_DOWNLOAD_URL,
   NORDVPN_INSTALL_COMMAND,
   NORDVPN_LOGIN_COMMAND,
-  openBrewInstallInTerminal,
+  installNordvpnViaBrew,
 } from "./nordvpn";
 
 export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
@@ -36,21 +37,20 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
           <ActionPanel>
             {brew && (
               <Action
-                title="Install Via Homebrew in Terminal"
-                icon={Icon.Terminal}
+                title="Install Via Homebrew"
+                icon={Icon.Download}
                 onAction={async () => {
                   const toast = await showToast({
                     style: Toast.Style.Animated,
-                    title: "Opening Terminal…",
+                    title: "Installing NordVPN…",
                     message:
-                      "Run the Homebrew installer there so you can see prompts/output.",
+                      "Running brew install --cask nordvpn. This can take several minutes.",
                   });
                   try {
-                    await openBrewInstallInTerminal();
+                    await installNordvpnViaBrew();
                     toast.style = Toast.Style.Success;
-                    toast.title = "Terminal opened";
-                    toast.message =
-                      "Complete the Homebrew install, then run Log in from Raycast.";
+                    toast.title = "NordVPN installed";
+                    toast.message = "Run the Log in command to sign in.";
                     toast.primaryAction = {
                       title: "Log In",
                       onAction: async () => {
@@ -60,11 +60,18 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                         });
                       },
                     };
+                    onRecheck?.();
                   } catch (err) {
                     toast.style = Toast.Style.Failure;
-                    toast.title = "Could not open Terminal";
+                    toast.title = "Install failed";
                     toast.message =
                       err instanceof Error ? err.message : String(err);
+                    toast.primaryAction = {
+                      title: "Copy Install Command",
+                      onAction: async () => {
+                        await Clipboard.copy(NORDVPN_INSTALL_COMMAND);
+                      },
+                    };
                   }
                 }}
               />
