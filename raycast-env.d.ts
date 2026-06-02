@@ -10,7 +10,7 @@
 type ExtensionPreferences = {
   /** Default Location - Optional default location for quick connect, e.g. United_States, Germany, London */
   "defaultLocation"?: string,
-  /** NordVPN CLI Path - Optional path to nordvpn CLI. Leave blank to use macOS app automation. */
+  /** NordVPN CLI Path - Path to nordvpn command if not in PATH */
   "nordvpnPath": string
 }
 
