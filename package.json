@@ -2,13 +2,10 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "nordvpn",
   "title": "NordVPN",
-  "description": "Control NordVPN from Raycast using the NordVPN CLI or macOS app automation",
+  "description": "Control NordVPN from Raycast using the NordVPN CLI",
   "icon": "command-icon.png",
   "author": "vanxh",
-  "categories": [
-    "Applications",
-    "Productivity"
-  ],
+  "categories": ["Applications", "Productivity"],
   "license": "MIT",
   "commands": [
     {
@@ -26,7 +23,7 @@
     {
       "name": "login",
       "title": "Log in",
-      "description": "Start NordVPN login or open the macOS app",
+      "description": "Start the NordVPN login flow and open the browser URL",
       "mode": "view"
     },
     {
@@ -59,10 +56,10 @@
     {
       "name": "nordvpnPath",
       "title": "NordVPN CLI Path",
-      "description": "Optional path to nordvpn CLI. Leave blank to use macOS app automation.",
+      "description": "Path to nordvpn command if not in PATH",
       "type": "textfield",
       "required": false,
-      "default": ""
+      "default": "/usr/local/bin/nordvpn"
     }
   ],
   "scripts": {
@@ -73,8 +70,7 @@
   },
   "dependencies": {
     "@raycast/api": "latest",
-    "@raycast/utils": "latest",
-    "run-applescript": "^7.1.0"
+    "@raycast/utils": "latest"
   },
   "devDependencies": {
     "@raycast/eslint-config": "latest",
