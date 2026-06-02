@@ -1,9 +1,11 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { existsSync } from "node:fs";
 import { getPreferenceValues, open, showToast, Toast } from "@raycast/api";
 
 const execFileP = promisify(execFile);
+
+const URL_RE = /https?:\/\/[^\s'")]+/;
 
 export interface Preferences {
   defaultLocation?: string;
@@ -254,4 +256,119 @@ export async function withToast<T>(
 
 export function sanitizeLocation(input: string): string {
   return input.trim().replace(/\s+/g, "_");
+}
+
+export interface LoginResult {
+  url?: string;
+  alreadyLoggedIn: boolean;
+  output: string;
+}
+
+export async function loginNordvpn(
+  opts: { timeoutMs?: number } = {},
+): Promise<LoginResult> {
+  const bin = findNordvpnBinary();
+  if (!bin) {
+    throw new NordvpnError(
+      `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\` or from ${NORDVPN_DOWNLOAD_URL}.`,
+    );
+  }
+  const timeoutMs = opts.timeoutMs ?? 30_000;
+  return new Promise<LoginResult>((resolve, reject) => {
+    const child = spawn(bin, ["login"], {
+      env: {
+        ...process.env,
+        PATH: `${process.env.PATH || ""}:/usr/local/bin:/opt/homebrew/bin:/usr/bin`,
+      },
+    });
+    let buf = "";
+    let settled = false;
+    const finish = (action: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      action();
+    };
+    const checkBuffer = () => {
+      const clean = cleanOutput(buf);
+      const m = clean.match(URL_RE);
+      if (m) {
+        const url = m[0];
+        finish(() => {
+          child.unref();
+          resolve({ url, alreadyLoggedIn: false, output: clean });
+        });
+        return;
+      }
+      if (/already logged ?in/i.test(clean)) {
+        finish(() => {
+          try {
+            child.kill("SIGTERM");
+          } catch {
+            // ignore
+          }
+          resolve({ alreadyLoggedIn: true, output: clean });
+        });
+      }
+    };
+    const onData = (d: Buffer) => {
+      buf += d.toString();
+      checkBuffer();
+    };
+    child.stdout?.on("data", onData);
+    child.stderr?.on("data", onData);
+    child.on("error", (e: NodeJS.ErrnoException) => {
+      finish(() => {
+        if (e.code === "ENOENT") {
+          reject(
+            new NordvpnError(
+              `NordVPN CLI not found. Install with \`${NORDVPN_INSTALL_COMMAND}\`.`,
+            ),
+          );
+        } else {
+          reject(new NordvpnError(e.message || "Failed to start nordvpn"));
+        }
+      });
+    });
+    child.on("exit", (code) => {
+      finish(() => {
+        const clean = cleanOutput(buf);
+        if (code === 0) {
+          resolve({
+            alreadyLoggedIn: /already logged ?in|welcome/i.test(clean),
+            output: clean,
+          });
+        } else {
+          reject(
+            new NordvpnError(
+              clean.split("\n").pop() ||
+                `nordvpn login exited with code ${code ?? "null"}`,
+              clean,
+            ),
+          );
+        }
+      });
+    });
+    const timer = setTimeout(() => {
+      finish(() => {
+        try {
+          child.kill("SIGTERM");
+        } catch {
+          // ignore
+        }
+        const clean = cleanOutput(buf);
+        const m = clean.match(URL_RE);
+        if (m) {
+          resolve({ url: m[0], alreadyLoggedIn: false, output: clean });
+        } else {
+          reject(
+            new NordvpnError(
+              `Login timed out after ${Math.round(timeoutMs / 1000)}s. Try \`${NORDVPN_LOGIN_COMMAND}\` in a terminal.`,
+              clean,
+            ),
+          );
+        }
+      });
+    }, timeoutMs);
+  });
 }

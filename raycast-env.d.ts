@@ -22,6 +22,8 @@ declare namespace Preferences {
   export type Connect = ExtensionPreferences & {}
   /** Preferences accessible in the `disconnect` command */
   export type Disconnect = ExtensionPreferences & {}
+  /** Preferences accessible in the `login` command */
+  export type Login = ExtensionPreferences & {}
   /** Preferences accessible in the `status` command */
   export type Status = ExtensionPreferences & {}
   /** Preferences accessible in the `quick-actions` command */
@@ -35,6 +37,8 @@ declare namespace Arguments {
   export type Connect = {}
   /** Arguments passed to the `disconnect` command */
   export type Disconnect = {}
+  /** Arguments passed to the `login` command */
+  export type Login = {}
   /** Arguments passed to the `status` command */
   export type Status = {}
   /** Arguments passed to the `quick-actions` command */

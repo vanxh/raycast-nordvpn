@@ -21,6 +21,12 @@
       "mode": "no-view"
     },
     {
+      "name": "login",
+      "title": "Log in",
+      "description": "Start the NordVPN login flow and open the browser URL",
+      "mode": "view"
+    },
+    {
       "name": "status",
       "title": "Status",
       "description": "Show current NordVPN status",

@@ -6,6 +6,7 @@ Control [NordVPN](https://nordvpn.com) from Raycast using the official `nordvpn`
 
 - **Connect** — Connect to the fastest server, a specific country/city/server, or a specialty group (P2P, Double VPN, Onion Over VPN, Dedicated IP).
 - **Disconnect** — Disconnect immediately (no-view).
+- **Log in** — Starts `nordvpn login`, extracts the browser login URL, and opens it from Raycast.
 - **Status** — Show current connection state, IP, country, technology, transfer, uptime.
 - **Quick Actions** — One-shot list for fastest connect, default location, specialty groups, reconnect, disconnect.
 - **Settings** — Toggle Kill Switch, Auto-connect, Threat Protection Lite, Meshnet, Obfuscation, Notifications, IPv6, Routing, Analytics, LAN Discovery, Virtual Location.
@@ -18,7 +19,7 @@ Manual setup:
 
 1. Install the CLI: <https://nordvpn.com/download/> or on macOS with Homebrew: `brew install --cask nordvpn`
 2. Start the daemon (Linux: `sudo systemctl start nordvpnd`; macOS: launches automatically after install).
-3. Log in: `nordvpn login` (follow the printed browser URL).
+3. Log in from Raycast with **NordVPN → Log in**. It runs `nordvpn login`, opens the browser URL, and leaves credential handling to NordVPN's CLI/browser flow.
 4. Verify: `nordvpn status` works in a normal terminal.
 
 If the binary is not in `PATH`, set its full path in the extension preferences (`NordVPN CLI Path`).
@@ -54,7 +55,7 @@ npm run build      # ray build -e dist
 - Output is stripped of ANSI codes and CLI spinner glyphs before parsing.
 - Status / Settings are parsed as `Key: Value` pairs from the CLI's stdout.
 - Errors are mapped to human messages (not logged in, daemon down, CLI missing, permission denied).
-- No credentials are touched; login lives entirely inside the CLI.
+- No credentials are touched; login is initiated by Raycast but handled entirely by NordVPN's CLI/browser callback flow.
 
 ## Notes
 

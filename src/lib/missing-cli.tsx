@@ -2,6 +2,8 @@ import {
   Action,
   ActionPanel,
   Icon,
+  launchCommand,
+  LaunchType,
   List,
   showToast,
   Toast,
@@ -46,7 +48,16 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                     await installNordvpnViaBrew();
                     toast.style = Toast.Style.Success;
                     toast.title = "NordVPN installed";
-                    toast.message = `Run \`${NORDVPN_LOGIN_COMMAND}\` in a terminal to sign in.`;
+                    toast.message = "Run the Log In command to sign in.";
+                    toast.primaryAction = {
+                      title: "Log In",
+                      onAction: async () => {
+                        await launchCommand({
+                          name: "login",
+                          type: LaunchType.UserInitiated,
+                        });
+                      },
+                    };
                     onRecheck?.();
                   } catch (err) {
                     toast.style = Toast.Style.Failure;
@@ -88,6 +99,16 @@ export function MissingCliView({ onRecheck }: { onRecheck?: () => void }) {
                 onAction={onRecheck}
               />
             )}
+            <Action
+              title="Open Log in Command"
+              icon={Icon.Lock}
+              onAction={async () => {
+                await launchCommand({
+                  name: "login",
+                  type: LaunchType.UserInitiated,
+                });
+              }}
+            />
           </ActionPanel>
         }
       />
